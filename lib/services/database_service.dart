@@ -1,0 +1,298 @@
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+import '../models/word.dart';
+import '../models/quiz_result.dart';
+import '../utils/constants.dart';
+
+/// 데이터베이스 서비스 클래스
+/// SQLite 데이터베이스를 관리하고 CRUD 작업을 수행
+class DatabaseService {
+  static final DatabaseService _instance = DatabaseService._internal();
+  static Database? _database;
+
+  /// 싱글톤 패턴 - 인스턴스 반환
+  factory DatabaseService() {
+    return _instance;
+  }
+
+  DatabaseService._internal();
+
+  /// 데이터베이스 인스턴스 가져오기
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
+  }
+
+  /// 데이터베이스 초기화
+  Future<Database> _initDatabase() async {
+    if (kIsWeb) {
+      // Web용 데이터베이스 팩토리 설정
+      var factory = databaseFactoryFfiWeb;
+      final path = AppConstants.databaseName;
+      return await factory.openDatabase(
+        path,
+        options: OpenDatabaseOptions(
+          version: AppConstants.databaseVersion,
+          onCreate: _onCreate,
+          onUpgrade: _onUpgrade,
+        ),
+      );
+    } else {
+      // 모바일(Android/iOS)용 기존 방식
+      final databasesPath = await getDatabasesPath();
+      final path = join(databasesPath, AppConstants.databaseName);
+
+      return await openDatabase(
+        path,
+        version: AppConstants.databaseVersion,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+      );
+    }
+  }
+
+  /// 데이터베이스 테이블 생성
+  Future<void> _onCreate(Database db, int version) async {
+    // 단어 테이블 생성
+    await db.execute('''
+      CREATE TABLE ${AppConstants.wordsTable} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        word TEXT NOT NULL,
+        meaning TEXT NOT NULL,
+        example TEXT,
+        difficulty INTEGER DEFAULT 1,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      )
+    ''');
+
+    // 퀴즈 결과 테이블 생성
+    await db.execute('''
+      CREATE TABLE ${AppConstants.quizResultsTable} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        totalQuestions INTEGER NOT NULL,
+        correctAnswers INTEGER NOT NULL,
+        wrongAnswers INTEGER NOT NULL,
+        score REAL NOT NULL,
+        timeTaken INTEGER NOT NULL,
+        completedAt TEXT NOT NULL,
+        quizType TEXT
+      )
+    ''');
+  }
+
+  /// 데이터베이스 업그레이드
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    // 향후 버전 업그레이드 시 사용
+  }
+
+  // ==================== 단어 관련 메서드 ====================
+
+  /// 단어 추가
+  Future<int> insertWord(Word word) async {
+    final db = await database;
+    return await db.insert(
+      AppConstants.wordsTable,
+      word.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// 모든 단어 조회
+  Future<List<Word>> getAllWords() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      AppConstants.wordsTable,
+      orderBy: 'createdAt DESC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return Word.fromMap(maps[i]);
+    });
+  }
+
+  /// ID로 단어 조회
+  Future<Word?> getWordById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      AppConstants.wordsTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isEmpty) return null;
+    return Word.fromMap(maps.first);
+  }
+
+  /// 난이도별 단어 조회
+  Future<List<Word>> getWordsByDifficulty(int difficulty) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      AppConstants.wordsTable,
+      where: 'difficulty = ?',
+      whereArgs: [difficulty],
+      orderBy: 'createdAt DESC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return Word.fromMap(maps[i]);
+    });
+  }
+
+  /// 단어 검색
+  Future<List<Word>> searchWords(String query) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      AppConstants.wordsTable,
+      where: 'word LIKE ? OR meaning LIKE ?',
+      whereArgs: ['%$query%', '%$query%'],
+      orderBy: 'createdAt DESC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return Word.fromMap(maps[i]);
+    });
+  }
+
+  /// 단어 수정
+  Future<int> updateWord(Word word) async {
+    final db = await database;
+    return await db.update(
+      AppConstants.wordsTable,
+      word.copyWith(updatedAt: DateTime.now()).toMap(),
+      where: 'id = ?',
+      whereArgs: [word.id],
+    );
+  }
+
+  /// 단어 삭제
+  Future<int> deleteWord(int id) async {
+    final db = await database;
+    return await db.delete(
+      AppConstants.wordsTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// 전체 단어 개수 조회
+  Future<int> getWordsCount() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM ${AppConstants.wordsTable}',
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// 난이도별 단어 개수 조회
+  Future<Map<int, int>> getWordsCountByDifficulty() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT difficulty, COUNT(*) as count FROM ${AppConstants.wordsTable} GROUP BY difficulty',
+    );
+
+    final Map<int, int> counts = {1: 0, 2: 0, 3: 0};
+    for (var row in result) {
+      final difficulty = row['difficulty'] as int;
+      final count = row['count'] as int;
+      counts[difficulty] = count;
+    }
+    return counts;
+  }
+
+  // ==================== 퀴즈 결과 관련 메서드 ====================
+
+  /// 퀴즈 결과 저장
+  Future<int> insertQuizResult(QuizResult result) async {
+    final db = await database;
+    return await db.insert(
+      AppConstants.quizResultsTable,
+      result.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// 모든 퀴즈 결과 조회
+  Future<List<QuizResult>> getAllQuizResults() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      AppConstants.quizResultsTable,
+      orderBy: 'completedAt DESC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return QuizResult.fromMap(maps[i]);
+    });
+  }
+
+  /// 최근 퀴즈 결과 조회 (limit 개수만큼)
+  Future<List<QuizResult>> getRecentQuizResults(int limit) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      AppConstants.quizResultsTable,
+      orderBy: 'completedAt DESC',
+      limit: limit,
+    );
+
+    return List.generate(maps.length, (i) {
+      return QuizResult.fromMap(maps[i]);
+    });
+  }
+
+  /// 퀴즈 결과 삭제
+  Future<int> deleteQuizResult(int id) async {
+    final db = await database;
+    return await db.delete(
+      AppConstants.quizResultsTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// 전체 퀴즈 결과 개수 조회
+  Future<int> getQuizResultsCount() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM ${AppConstants.quizResultsTable}',
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// 평균 점수 조회
+  Future<double> getAverageScore() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT AVG(score) as avgScore FROM ${AppConstants.quizResultsTable}',
+    );
+    return (result.first['avgScore'] as double?) ?? 0.0;
+  }
+
+  /// 최고 점수 조회
+  Future<double> getHighestScore() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT MAX(score) as maxScore FROM ${AppConstants.quizResultsTable}',
+    );
+    return (result.first['maxScore'] as double?) ?? 0.0;
+  }
+
+  // ==================== 유틸리티 메서드 ====================
+
+  /// 모든 데이터 삭제 (초기화)
+  Future<void> clearAllData() async {
+    final db = await database;
+    await db.delete(AppConstants.wordsTable);
+    await db.delete(AppConstants.quizResultsTable);
+  }
+
+  /// 데이터베이스 닫기
+  Future<void> close() async {
+    final db = await database;
+    await db.close();
+    _database = null;
+  }
+}
