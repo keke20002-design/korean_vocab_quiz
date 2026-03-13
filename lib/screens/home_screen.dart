@@ -105,24 +105,31 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 앱바
   Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 200,
       floating: false,
       pinned: true,
       backgroundColor: const Color(0xFFF9FAFB),
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          AppConstants.appName,
-          style: AppTheme.headingMedium.copyWith(color: const Color(0xFF111827)),
+        centerTitle: true,
+        title: SizedBox(
+          height: 125,
+          child: Image.asset(
+            'assets/images/logo.png',
+            fit: BoxFit.contain,
+          ),
         ),
         background: Container(
           decoration: const BoxDecoration(
             gradient: AppTheme.primaryGradient,
           ),
           child: Center(
-            child: Icon(
-              AppIcons.quiz,
-              size: 64,
-              color: AppTheme.primaryColor.withValues(alpha: 0.3),
+            child: Opacity(
+              opacity: 0.1,
+              child: Icon(
+                AppIcons.quiz,
+                size: 80,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
@@ -179,13 +186,13 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: _buildStatCard(
-                '전체 단어',
+                '전체',
                 '${wordProvider.totalWords}개',
                 AppIcons.wordList,
                 AppTheme.primaryColor,
               ),
             ),
-            const SizedBox(width: AppTheme.paddingM),
+            const SizedBox(width: AppTheme.paddingS),
             Expanded(
               child: _buildStatCard(
                 '쉬움',
@@ -194,13 +201,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 AppTheme.successColor,
               ),
             ),
-            const SizedBox(width: AppTheme.paddingM),
+            const SizedBox(width: AppTheme.paddingS),
             Expanded(
               child: _buildStatCard(
                 '보통',
                 '${counts[2] ?? 0}개',
                 AppIcons.star,
                 AppTheme.warningColor,
+              ),
+            ),
+            const SizedBox(width: AppTheme.paddingS),
+            Expanded(
+              child: _buildStatCard(
+                '어려움',
+                '${counts[3] ?? 0}개',
+                AppIcons.star,
+                AppTheme.errorColor,
               ),
             ),
           ],
@@ -245,7 +261,9 @@ class _HomeScreenState extends State<HomeScreen> {
           '퀴즈 시작하기',
           '단어를 선택하고 퀴즈를 풀어보세요',
           AppIcons.play,
-          AppTheme.primaryGradient,
+          AppTheme.quizGradient,
+          AppTheme.quizBlue,
+          const Color(0xFFBFDBFE),
           () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const QuizSetupScreen()),
@@ -256,7 +274,9 @@ class _HomeScreenState extends State<HomeScreen> {
           '단어 관리',
           '단어를 추가하거나 수정해보세요',
           AppIcons.wordList,
-          AppTheme.successGradient,
+          AppTheme.wordsGradient,
+          AppTheme.wordsPurple,
+          const Color(0xFFDDD6FE),
           () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const WordListScreen()),
@@ -272,6 +292,8 @@ class _HomeScreenState extends State<HomeScreen> {
     String subtitle,
     IconData icon,
     Gradient gradient,
+    Color accentColor,
+    Color borderColor,
     VoidCallback onTap,
   ) {
     return InkWell(
@@ -283,17 +305,17 @@ class _HomeScreenState extends State<HomeScreen> {
           gradient: gradient,
           borderRadius: BorderRadius.circular(AppTheme.radiusL),
           boxShadow: AppTheme.cardShadow,
-          border: Border.all(color: const Color(0xFFA7F3D0), width: 1),
+          border: Border.all(color: borderColor, width: 1),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(AppTheme.paddingM),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                color: accentColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppTheme.radiusM),
               ),
-              child: Icon(icon, color: AppTheme.primaryColor, size: 32),
+              child: Icon(icon, color: accentColor, size: 32),
             ),
             const SizedBox(width: AppTheme.paddingM),
             Expanded(
@@ -312,10 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            const Icon(
-              AppIcons.forward,
-              color: AppTheme.primaryColor,
-            ),
+            Icon(AppIcons.forward, color: accentColor),
           ],
         ),
       ),
@@ -339,27 +358,27 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: AppTheme.paddingM),
             ...quizProvider.quizResults.take(3).map((result) {
+              final gradeColor = _getGradeColor(result.grade);
               return Container(
                 margin: const EdgeInsets.only(bottom: AppTheme.paddingM),
                 padding: const EdgeInsets.all(AppTheme.paddingM),
                 decoration: BoxDecoration(
-                  color: AppTheme.cardColor,
+                  color: gradeColor.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(AppTheme.radiusM),
                   boxShadow: AppTheme.cardShadow,
+                  border: Border.all(color: gradeColor.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(AppTheme.paddingM),
                       decoration: BoxDecoration(
-                        color: _getGradeColor(result.grade).withValues(alpha: 0.2),
+                        color: gradeColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(AppTheme.radiusS),
                       ),
                       child: Text(
                         result.grade,
-                        style: AppTheme.headingMedium.copyWith(
-                          color: _getGradeColor(result.grade),
-                        ),
+                        style: AppTheme.headingMedium.copyWith(color: gradeColor),
                       ),
                     ),
                     const SizedBox(width: AppTheme.paddingM),
@@ -392,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (grade) {
       case 'S':
       case 'A':
-        return AppTheme.successColor;
+        return AppTheme.goldColor;
       case 'B':
       case 'C':
         return AppTheme.warningColor;

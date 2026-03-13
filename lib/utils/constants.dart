@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 /// 앱 전체에서 사용되는 상수 및 테마 설정
 class AppConstants {
   // 앱 정보
-  static const String appName = '한국어 어휘 퀴즈';
+  static const String appName = '단어쏙쏙';
   static const String appVersion = '1.0.0';
 
   // 데이터베이스
   static const String databaseName = 'korean_vocab_quiz.db';
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 3;
 
   // 테이블 이름
   static const String wordsTable = 'words';
@@ -35,6 +35,9 @@ class AppTheme {
   static const Color successColor = Color(0xFF10B981); // 초록색
   static const Color errorColor = Color(0xFFFF6B6B); // 빨간색
   static const Color warningColor = Color(0xFFF97316); // 주황색
+  static const Color quizBlue = Color(0xFF3B82F6);    // 퀴즈 시작 파란색
+  static const Color wordsPurple = Color(0xFF8B5CF6); // 단어 관리 보라색
+  static const Color goldColor = Color(0xFFF59E0B);   // 고득점 금색
 
   // 배경 색상 (70% - 거의 흰색/매우 연한 회색)
   static const Color backgroundColor = Color(0xFFF9FAFB); // 아주 연한 회색/흰색
@@ -55,6 +58,18 @@ class AppTheme {
 
   static const LinearGradient successGradient = LinearGradient(
     colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient quizGradient = LinearGradient(
+    colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient wordsGradient = LinearGradient(
+    colors: [Color(0xFFF5F3FF), Color(0xFFEDE9FE)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

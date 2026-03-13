@@ -163,6 +163,11 @@ class _QuizSetupScreenState extends State<QuizSetupScreen> {
 
   /// 문제 개수 선택기
   Widget _buildQuestionCountSelector(int maxWords) {
+    final sliderMax = (maxWords < AppConstants.maxQuizWords ? maxWords : AppConstants.maxQuizWords)
+        .clamp(AppConstants.minQuizWords, AppConstants.maxQuizWords)
+        .toDouble();
+    final clampedCount = _questionCount.clamp(AppConstants.minQuizWords, sliderMax.toInt());
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -171,18 +176,18 @@ class _QuizSetupScreenState extends State<QuizSetupScreen> {
           children: [
             Text('문제 개수', style: AppTheme.headingSmall),
             Text(
-              '$_questionCount개',
+              '$clampedCount개',
               style: AppTheme.headingSmall.copyWith(color: AppTheme.primaryColor),
             ),
           ],
         ),
         const SizedBox(height: AppTheme.paddingM),
         Slider(
-          value: _questionCount.toDouble(),
+          value: clampedCount.toDouble(),
           min: AppConstants.minQuizWords.toDouble(),
-          max: (maxWords < AppConstants.maxQuizWords ? maxWords.toDouble() : AppConstants.maxQuizWords.toDouble()).clamp(AppConstants.minQuizWords.toDouble(), double.infinity),
-          divisions: (maxWords < AppConstants.maxQuizWords ? maxWords - AppConstants.minQuizWords : AppConstants.maxQuizWords - AppConstants.minQuizWords).clamp(0, 1000),
-          label: '$_questionCount개',
+          max: sliderMax,
+          divisions: (sliderMax.toInt() - AppConstants.minQuizWords).clamp(1, 1000),
+          label: '$clampedCount개',
           onChanged: maxWords >= AppConstants.minQuizWords
               ? (value) {
                   setState(() {

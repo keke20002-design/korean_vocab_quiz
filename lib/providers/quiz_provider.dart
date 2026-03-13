@@ -213,7 +213,12 @@ class QuizProvider with ChangeNotifier {
 
       // 결과 저장
       await _dbService.insertQuizResult(result);
-      
+
+      // 단어별 학습 통계 업데이트
+      for (final quiz in _quizzes) {
+        await _dbService.updateWordStats(quiz.wordId, quiz.isCorrect == true);
+      }
+
       // 결과 목록 새로고침
       await loadQuizResults();
       

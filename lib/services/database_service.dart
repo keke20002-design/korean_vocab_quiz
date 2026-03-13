@@ -61,12 +61,16 @@ class DatabaseService {
     await db.execute('''
       CREATE TABLE ${AppConstants.wordsTable} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        word TEXT NOT NULL,
+        word TEXT NOT NULL UNIQUE,
         meaning TEXT NOT NULL,
         example TEXT,
         difficulty INTEGER DEFAULT 1,
         createdAt TEXT NOT NULL,
-        updatedAt TEXT NOT NULL
+        updatedAt TEXT NOT NULL,
+        try_count INTEGER DEFAULT 0,
+        correct_count INTEGER DEFAULT 0,
+        last_tested TEXT,
+        is_favorite INTEGER DEFAULT 0
       )
     ''');
 
@@ -87,7 +91,26 @@ class DatabaseService {
 
   /// 데이터베이스 업그레이드
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // 향후 버전 업그레이드 시 사용
+    if (oldVersion < 2) {
+      // 중복 단어 먼저 제거 (id가 작은 것만 남김)
+      await db.rawDelete('''
+        DELETE FROM ${AppConstants.wordsTable}
+        WHERE id NOT IN (
+          SELECT MIN(id) FROM ${AppConstants.wordsTable} GROUP BY word
+        )
+      ''');
+      // UNIQUE 인덱스 추가
+      await db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_word
+        ON ${AppConstants.wordsTable}(word)
+      ''');
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE ${AppConstants.wordsTable} ADD COLUMN try_count INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ${AppConstants.wordsTable} ADD COLUMN correct_count INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE ${AppConstants.wordsTable} ADD COLUMN last_tested TEXT');
+      await db.execute('ALTER TABLE ${AppConstants.wordsTable} ADD COLUMN is_favorite INTEGER DEFAULT 0');
+    }
   }
 
   // ==================== 단어 관련 메서드 ====================
@@ -169,6 +192,25 @@ class DatabaseService {
     );
   }
 
+  /// 단어 일괄 삽입 (Batch Insert, UNIQUE 제약으로 중복 자동 스킵)
+  Future<int> batchInsertWords(List<Word> words) async {
+    final db = await database;
+    int inserted = 0;
+
+    final batch = db.batch();
+    for (final word in words) {
+      batch.insert(
+        AppConstants.wordsTable,
+        word.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+    final results = await batch.commit(noResult: false);
+    // ConflictAlgorithm.ignore 시 성공=양수, 무시=0
+    inserted = results.whereType<int>().where((r) => r > 0).length;
+    return inserted;
+  }
+
   /// 단어 삭제
   Future<int> deleteWord(int id) async {
     final db = await database;
@@ -186,6 +228,106 @@ class DatabaseService {
       'SELECT COUNT(*) as count FROM ${AppConstants.wordsTable}',
     );
     return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// 오늘 추가된 단어 수
+  Future<int> getTodayWordsCount() async {
+    final db = await database;
+    final today = DateTime.now();
+    final startOfDay = DateTime(today.year, today.month, today.day).toIso8601String();
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM ${AppConstants.wordsTable} WHERE createdAt >= ?',
+      [startOfDay],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// 중복 단어 목록 조회 (같은 word가 2개 이상인 것)
+  Future<List<Word>> getDuplicateWords() async {
+    final db = await database;
+    final maps = await db.rawQuery('''
+      SELECT * FROM ${AppConstants.wordsTable}
+      WHERE word IN (
+        SELECT word FROM ${AppConstants.wordsTable}
+        GROUP BY word HAVING COUNT(*) > 1
+      )
+      ORDER BY word, id
+    ''');
+    return maps.map(Word.fromMap).toList();
+  }
+
+  /// 중복 단어 정리 (각 word에서 id 가장 작은 것만 남김)
+  Future<int> deleteDuplicateWords() async {
+    final db = await database;
+    return await db.rawDelete('''
+      DELETE FROM ${AppConstants.wordsTable}
+      WHERE id NOT IN (
+        SELECT MIN(id) FROM ${AppConstants.wordsTable} GROUP BY word
+      )
+    ''');
+  }
+
+  /// 단어 학습 통계 업데이트 (퀴즈 후 호출)
+  Future<void> updateWordStats(int wordId, bool isCorrect) async {
+    final db = await database;
+    await db.rawUpdate('''
+      UPDATE ${AppConstants.wordsTable}
+      SET
+        try_count = try_count + 1,
+        correct_count = correct_count + ?,
+        last_tested = ?
+      WHERE id = ?
+    ''', [isCorrect ? 1 : 0, DateTime.now().toIso8601String(), wordId]);
+  }
+
+  /// 학습 현황 통계 (미학습/학습중/완전정복)
+  Future<Map<String, int>> getLearningStats() async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT
+        SUM(CASE WHEN try_count = 0 THEN 1 ELSE 0 END) as untested,
+        SUM(CASE WHEN try_count > 0 AND correct_count < 3 THEN 1 ELSE 0 END) as learning,
+        SUM(CASE WHEN correct_count >= 3 THEN 1 ELSE 0 END) as mastered
+      FROM ${AppConstants.wordsTable}
+    ''');
+    if (result.isEmpty) return {'untested': 0, 'learning': 0, 'mastered': 0};
+    final row = result.first;
+    return {
+      'untested': (row['untested'] as int?) ?? 0,
+      'learning': (row['learning'] as int?) ?? 0,
+      'mastered': (row['mastered'] as int?) ?? 0,
+    };
+  }
+
+  /// 요주의 단어 (정답률 50% 미만, 시도 횟수 있는 단어)
+  Future<List<Word>> getWeakWords(int limit) async {
+    final db = await database;
+    final maps = await db.rawQuery('''
+      SELECT * FROM ${AppConstants.wordsTable}
+      WHERE try_count > 0
+        AND CAST(correct_count AS REAL) / try_count < 0.5
+      ORDER BY CAST(correct_count AS REAL) / try_count ASC, try_count DESC
+      LIMIT ?
+    ''', [limit]);
+    return maps.map(Word.fromMap).toList();
+  }
+
+  /// 최근 N일 학습 기록 (퀴즈 세션 수 / 일)
+  Future<Map<String, int>> getStudyCalendar(int days) async {
+    final db = await database;
+    final since = DateTime.now().subtract(Duration(days: days - 1));
+    final sinceStr = DateTime(since.year, since.month, since.day).toIso8601String();
+    final result = await db.rawQuery('''
+      SELECT DATE(completedAt) as day, COUNT(*) as count
+      FROM ${AppConstants.quizResultsTable}
+      WHERE completedAt >= ?
+      GROUP BY DATE(completedAt)
+    ''', [sinceStr]);
+    final Map<String, int> calendar = {};
+    for (final row in result) {
+      calendar[row['day'] as String] = row['count'] as int;
+    }
+    return calendar;
   }
 
   /// 난이도별 단어 개수 조회

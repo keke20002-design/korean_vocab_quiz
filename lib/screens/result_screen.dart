@@ -282,22 +282,32 @@ class _ResultScreenState extends State<ResultScreen> {
   /// 액션 버튼들
   Widget _buildActionButtons(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ElevatedButton.icon(
           onPressed: () => _retryQuiz(context),
           icon: const Icon(AppIcons.refresh),
-          label: const Text('다시 풀기'),
+          label: const Text('다시 풀기', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: AppTheme.paddingL),
+            minimumSize: const Size(double.infinity, 64),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusL),
+            ),
           ),
         ),
         const SizedBox(height: AppTheme.paddingM),
         OutlinedButton.icon(
           onPressed: () => _goToHome(context),
           icon: const Icon(AppIcons.home),
-          label: const Text('홈으로'),
+          label: const Text('홈으로', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: AppTheme.paddingL),
+            minimumSize: const Size(double.infinity, 64),
+            side: const BorderSide(color: AppTheme.primaryColor, width: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusL),
+            ),
           ),
         ),
       ],

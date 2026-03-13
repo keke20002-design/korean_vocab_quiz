@@ -3,7 +3,14 @@
     "allow": [
       "Bash(dart run:*)",
       "Bash(flutter pub:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/services/krdict_service.dart lib/providers/word_provider.dart lib/screens/word_list_screen.dart lib/services/database_service.dart 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/services/krdict_service.dart lib/providers/word_provider.dart lib/screens/word_list_screen.dart 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/screens/word_list_screen.dart lib/services/database_service.dart lib/services/krdict_service.dart lib/providers/word_provider.dart 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/screens/word_list_screen.dart lib/providers/word_provider.dart 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/services/krdict_service.dart lib/providers/word_provider.dart 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter pub get 2>&1 && flutter analyze lib/screens/word_list_screen.dart lib/providers/word_provider.dart 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/screens/word_list_screen.dart 2>&1)"
     ]
   }
 }
