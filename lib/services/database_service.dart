@@ -1,8 +1,5 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:flutter/foundation.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import '../models/word.dart';
 import '../models/quiz_result.dart';
 import '../utils/constants.dart';
@@ -29,30 +26,15 @@ class DatabaseService {
 
   /// 데이터베이스 초기화
   Future<Database> _initDatabase() async {
-    if (kIsWeb) {
-      // Web용 데이터베이스 팩토리 설정
-      var factory = databaseFactoryFfiWeb;
-      final path = AppConstants.databaseName;
-      return await factory.openDatabase(
-        path,
-        options: OpenDatabaseOptions(
-          version: AppConstants.databaseVersion,
-          onCreate: _onCreate,
-          onUpgrade: _onUpgrade,
-        ),
-      );
-    } else {
-      // 모바일(Android/iOS)용 기존 방식
-      final databasesPath = await getDatabasesPath();
-      final path = join(databasesPath, AppConstants.databaseName);
+    final databasesPath = await getDatabasesPath();
+    final path = join(databasesPath, AppConstants.databaseName);
 
-      return await openDatabase(
-        path,
-        version: AppConstants.databaseVersion,
-        onCreate: _onCreate,
-        onUpgrade: _onUpgrade,
-      );
-    }
+    return await openDatabase(
+      path,
+      version: AppConstants.databaseVersion,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   /// 데이터베이스 테이블 생성

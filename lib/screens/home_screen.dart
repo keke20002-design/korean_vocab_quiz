@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '준비됐어?',
+                  '같이 단어 퀴즈 해볼까?',
                   style: AppTheme.headingSmall.copyWith(color: Color(0xFF111827)),
                 ),
                 const SizedBox(height: AppTheme.paddingXS),
@@ -187,36 +187,36 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: _buildStatCard(
                 '전체',
-                '${wordProvider.totalWords}개',
+                '${wordProvider.totalWords}',
                 AppIcons.wordList,
-                AppTheme.primaryColor,
+                const Color(0xFF3B82F6),
               ),
             ),
             const SizedBox(width: AppTheme.paddingS),
             Expanded(
               child: _buildStatCard(
                 '쉬움',
-                '${counts[1] ?? 0}개',
+                '${counts[1] ?? 0}',
                 AppIcons.star,
-                AppTheme.successColor,
+                const Color(0xFF10B981),
               ),
             ),
             const SizedBox(width: AppTheme.paddingS),
             Expanded(
               child: _buildStatCard(
                 '보통',
-                '${counts[2] ?? 0}개',
+                '${counts[2] ?? 0}',
                 AppIcons.star,
-                AppTheme.warningColor,
+                const Color(0xFFF59E0B),
               ),
             ),
             const SizedBox(width: AppTheme.paddingS),
             Expanded(
               child: _buildStatCard(
                 '어려움',
-                '${counts[3] ?? 0}개',
+                '${counts[3] ?? 0}',
                 AppIcons.star,
-                AppTheme.errorColor,
+                const Color(0xFFEF4444),
               ),
             ),
           ],

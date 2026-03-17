@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../providers/word_provider.dart';
 import '../providers/quiz_provider.dart';
 import '../models/word.dart';
@@ -18,6 +20,11 @@ class WordListScreen extends StatefulWidget {
 }
 
 class _WordListScreenState extends State<WordListScreen> {
+  static const String _bannerAdUnitId = 'ca-app-pub-5381891295736795/1661860861';
+
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+
   int _todayCount = 0;
   int _duplicateCount = 0;
   Map<String, int> _learningStats = {'untested': 0, 'learning': 0, 'mastered': 0};
@@ -29,6 +36,31 @@ class _WordListScreenState extends State<WordListScreen> {
   void initState() {
     super.initState();
     _loadStats();
+    _loadBannerAd();
+  }
+
+  void _loadBannerAd() {
+    if (kIsWeb) return;
+    _bannerAd = BannerAd(
+      adUnitId: _bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() => _isBannerAdLoaded = true);
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          _bannerAd = null;
+        },
+      ),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
   }
 
   Future<void> _loadStats() async {
@@ -64,6 +96,12 @@ class _WordListScreenState extends State<WordListScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: _isBannerAdLoaded && _bannerAd != null
+          ? SizedBox(
+              height: _bannerAd!.size.height.toDouble(),
+              child: AdWidget(ad: _bannerAd!),
+            )
+          : null,
       body: _statsLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(

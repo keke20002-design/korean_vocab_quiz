@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+2
+version: 1.0.0+6
 
 environment:
   sdk: ^3.10.7
@@ -47,8 +47,7 @@ dependencies:
   intl: ^0.20.1
   
   # Web용 SQLite 지원
-  sqflite_common_ffi: any
-  sqflite_common_ffi_web: any
+  sqflite_common_ffi_web: ^0.4.5+2
 
   # 간단한 키-값 영구 저장 (마지막 동기화 시간 등)
   shared_preferences: ^2.3.4
@@ -72,6 +71,13 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

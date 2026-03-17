@@ -10,7 +10,13 @@
       "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/screens/word_list_screen.dart lib/providers/word_provider.dart 2>&1)",
       "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/services/krdict_service.dart lib/providers/word_provider.dart 2>&1)",
       "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter pub get 2>&1 && flutter analyze lib/screens/word_list_screen.dart lib/providers/word_provider.dart 2>&1)",
-      "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/screens/word_list_screen.dart 2>&1)"
+      "Bash(cd \"C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\" && flutter analyze lib/screens/word_list_screen.dart 2>&1)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Remove-Item -Force 'C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\\\\.dart_tool\\\\hooks_runner\\\\shared\\\\sqlite3\\\\.lock' -ErrorAction SilentlyContinue; Write-Host 'Done'\")",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force 'C:\\\\Users\\\\admin\\\\korean_vocab_quiz\\\\korean_vocab_quiz\\\\.dart_tool' -ErrorAction SilentlyContinue; Write-Host 'Done'\")",
+      "Bash(cd:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)"
     ]
   }
 }

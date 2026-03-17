@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../providers/word_provider.dart';
 import '../models/word.dart';
 import '../utils/constants.dart';
@@ -15,6 +17,11 @@ class WordFormScreen extends StatefulWidget {
 }
 
 class _WordFormScreenState extends State<WordFormScreen> {
+  static const String _bannerAdUnitId = 'ca-app-pub-5381891295736795/1661860861';
+
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _wordController;
   late TextEditingController _meaningController;
@@ -29,10 +36,30 @@ class _WordFormScreenState extends State<WordFormScreen> {
     _meaningController = TextEditingController(text: widget.word?.meaning ?? '');
     _exampleController = TextEditingController(text: widget.word?.example ?? '');
     _difficulty = widget.word?.difficulty ?? 1;
+    _loadBannerAd();
+  }
+
+  void _loadBannerAd() {
+    if (kIsWeb) return;
+    _bannerAd = BannerAd(
+      adUnitId: _bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() => _isBannerAdLoaded = true);
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          _bannerAd = null;
+        },
+      ),
+    )..load();
   }
 
   @override
   void dispose() {
+    _bannerAd?.dispose();
     _wordController.dispose();
     _meaningController.dispose();
     _exampleController.dispose();
@@ -48,6 +75,12 @@ class _WordFormScreenState extends State<WordFormScreen> {
       appBar: AppBar(
         title: Text(isEditing ? '단어 수정' : '단어 추가'),
       ),
+      bottomNavigationBar: _isBannerAdLoaded && _bannerAd != null
+          ? SizedBox(
+              height: _bannerAd!.size.height.toDouble(),
+              child: AdWidget(ad: _bannerAd!),
+            )
+          : null,
       body: Form(
         key: _formKey,
         child: ListView(

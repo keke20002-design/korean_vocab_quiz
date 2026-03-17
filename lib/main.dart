@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+import 'package:sqflite/sqflite.dart';
 import 'utils/constants.dart';
 import 'utils/sample_data.dart';
 import 'providers/word_provider.dart';
@@ -28,6 +30,11 @@ void main() async {
     ),
   );
   
+  // Web용 SQLite 초기화
+  if (kIsWeb) {
+    databaseFactory = databaseFactoryFfiWeb;
+  }
+
   // Google Mobile Ads SDK 초기화 (Android/iOS만)
   if (!kIsWeb) {
     await MobileAds.instance.initialize();
