@@ -318,12 +318,21 @@ class _ResultScreenState extends State<ResultScreen> {
   Gradient _getGradeGradient(String grade) {
     switch (grade) {
       case 'S':
+        return const LinearGradient(
+          colors: [Color(0xFF92620A), Color(0xFFB8860B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
       case 'A':
-        return AppTheme.successGradient;
+        return const LinearGradient(
+          colors: [Color(0xFF1B6B3A), Color(0xFF27AE60)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
       case 'B':
       case 'C':
         return const LinearGradient(
-          colors: [AppTheme.warningColor, Color(0xFFFFD54F)],
+          colors: [Color(0xFFE07B00), Color(0xFFF59E0B)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );

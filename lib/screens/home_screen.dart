@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<WordProvider>().loadWords();
-      context.read<QuizProvider>().loadRecentQuizResults(5);
+      context.read<QuizProvider>().loadRecentQuizResults(30);
     });
     _loadBannerAd();
   }
@@ -79,8 +79,8 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(AppTheme.paddingM),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  // 환영 메시지
-                  _buildWelcomeCard(),
+                  // 기록 카드
+                  _buildRecordCard(),
                   const SizedBox(height: AppTheme.paddingL),
                   
                   // 통계 카드
@@ -105,30 +105,53 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 앱바
   Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 160,
       floating: false,
       pinned: true,
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFF0F2D52),
       flexibleSpace: FlexibleSpaceBar(
-        centerTitle: true,
-        title: SizedBox(
-          height: 125,
-          child: Image.asset(
-            'assets/images/logo.png',
-            fit: BoxFit.contain,
-          ),
-        ),
         background: Container(
           decoration: const BoxDecoration(
-            gradient: AppTheme.primaryGradient,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0F2D52), Color(0xFF1A4A7A)],
+            ),
           ),
-          child: Center(
-            child: Opacity(
-              opacity: 0.1,
-              child: Icon(
-                AppIcons.quiz,
-                size: 80,
-                color: Colors.white,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 36, 24, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    '단어 쏙쏙',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFFB8C9D9),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '어휘 실력을 테스트해보세요',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    '지금 바로 퀴즈에 도전하세요',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFFB8C9D9),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -137,42 +160,73 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 환영 메시지 카드
-  Widget _buildWelcomeCard() {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.paddingL),
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
-        borderRadius: BorderRadius.circular(AppTheme.radiusL),
-        boxShadow: AppTheme.cardShadow,
-        border: Border.all(color: const Color(0xFFA7F3D0), width: 1),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.waving_hand_rounded,
-            size: 48,
-            color: Color(0xFF059669),
-          ),
-          const SizedBox(width: AppTheme.paddingM),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '같이 단어 퀴즈 해볼까?',
-                  style: AppTheme.headingSmall.copyWith(color: Color(0xFF111827)),
-                ),
-                const SizedBox(height: AppTheme.paddingXS),
-                Text(
-                  '한국어 퀴즈 출발! 😊',
-                  style: AppTheme.bodyMedium.copyWith(color: Color(0xFF374151)),
-                ),
-              ],
+  /// 연속 학습일 계산
+  int _calcStreak(List<dynamic> results) {
+    if (results.isEmpty) return 0;
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final dates = results
+        .map((r) => DateTime(r.completedAt.year, r.completedAt.month, r.completedAt.day))
+        .toSet();
+
+    int streak = 0;
+    DateTime check = todayDate;
+    while (dates.contains(check)) {
+      streak++;
+      check = check.subtract(const Duration(days: 1));
+    }
+    if (streak == 0) {
+      check = todayDate.subtract(const Duration(days: 1));
+      while (dates.contains(check)) {
+        streak++;
+        check = check.subtract(const Duration(days: 1));
+      }
+    }
+    return streak;
+  }
+
+  /// 기록 카드
+  Widget _buildRecordCard() {
+    return Consumer<QuizProvider>(
+      builder: (context, quizProvider, child) {
+        final results = quizProvider.quizResults;
+        final bestScore = results.isEmpty
+            ? 0
+            : results.map((r) => r.accuracyPercentage).reduce((a, b) => a > b ? a : b);
+        final streak = _calcStreak(results);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: AppTheme.paddingL, horizontal: AppTheme.paddingL),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2F80ED), Color(0xFF1A6FD6)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(AppTheme.radiusL),
+            boxShadow: AppTheme.cardShadow,
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              Expanded(child: _buildRecordItem(Icons.emoji_events_rounded, '최고 점수', results.isEmpty ? '-' : '$bestScore점', const Color(0xFFFFD700))),
+              Container(width: 1, height: 50, color: Colors.white24),
+              Expanded(child: _buildRecordItem(Icons.local_fire_department_rounded, '연속 학습', '$streak일', const Color(0xFFFF7043))),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRecordItem(IconData icon, String label, String value, Color iconColor) {
+    return Column(
+      children: [
+        Icon(icon, color: iconColor, size: 30),
+        const SizedBox(height: 6),
+        Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+      ],
     );
   }
 
@@ -184,41 +238,13 @@ class _HomeScreenState extends State<HomeScreen> {
         
         return Row(
           children: [
-            Expanded(
-              child: _buildStatCard(
-                '전체',
-                '${wordProvider.totalWords}',
-                AppIcons.wordList,
-                const Color(0xFF3B82F6),
-              ),
-            ),
+            Expanded(child: _buildStatCard('Total', '${wordProvider.totalWords}', AppIcons.wordList, const Color(0xFF2F80ED))),
             const SizedBox(width: AppTheme.paddingS),
-            Expanded(
-              child: _buildStatCard(
-                '쉬움',
-                '${counts[1] ?? 0}',
-                AppIcons.star,
-                const Color(0xFF10B981),
-              ),
-            ),
+            Expanded(child: _buildStatCard('Easy', '${counts[1] ?? 0}', AppIcons.star, const Color(0xFF27AE60))),
             const SizedBox(width: AppTheme.paddingS),
-            Expanded(
-              child: _buildStatCard(
-                '보통',
-                '${counts[2] ?? 0}',
-                AppIcons.star,
-                const Color(0xFFF59E0B),
-              ),
-            ),
+            Expanded(child: _buildStatCard('Normal', '${counts[2] ?? 0}', AppIcons.star, const Color(0xFFF59E0B))),
             const SizedBox(width: AppTheme.paddingS),
-            Expanded(
-              child: _buildStatCard(
-                '어려움',
-                '${counts[3] ?? 0}',
-                AppIcons.star,
-                const Color(0xFFEF4444),
-              ),
-            ),
+            Expanded(child: _buildStatCard('Hard', '${counts[3] ?? 0}', AppIcons.star, const Color(0xFFEF4444))),
           ],
         );
       },
@@ -228,24 +254,25 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 개별 통계 카드
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(AppTheme.paddingM),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusM),
         boxShadow: AppTheme.cardShadow,
+        border: Border(bottom: BorderSide(color: color, width: 3)),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: AppTheme.paddingS),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
           Text(
             value,
-            style: AppTheme.headingSmall.copyWith(color: color),
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: color),
           ),
-          const SizedBox(height: AppTheme.paddingXS),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: AppTheme.bodySmall,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF888888)),
             textAlign: TextAlign.center,
           ),
         ],
@@ -352,33 +379,38 @@ class _HomeScreenState extends State<HomeScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '최근 퀴즈 결과',
-              style: AppTheme.headingSmall,
+            Row(
+              children: [
+                Container(width: 4, height: 20, decoration: BoxDecoration(color: AppTheme.primaryColor, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(width: 8),
+                Text('최근 퀴즈 결과', style: AppTheme.headingSmall),
+              ],
             ),
             const SizedBox(height: AppTheme.paddingM),
             ...quizProvider.quizResults.take(3).map((result) {
               final gradeColor = _getGradeColor(result.grade);
+              final d = result.completedAt;
+              final dateStr = '${d.month}/${d.day} ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
               return Container(
                 margin: const EdgeInsets.only(bottom: AppTheme.paddingM),
-                padding: const EdgeInsets.all(AppTheme.paddingM),
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.paddingM, vertical: 14),
                 decoration: BoxDecoration(
-                  color: gradeColor.withValues(alpha: 0.06),
+                  color: AppTheme.cardColor,
                   borderRadius: BorderRadius.circular(AppTheme.radiusM),
                   boxShadow: AppTheme.cardShadow,
-                  border: Border.all(color: gradeColor.withValues(alpha: 0.2)),
+                  border: Border(left: BorderSide(color: gradeColor, width: 4)),
                 ),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(AppTheme.paddingM),
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
-                        color: gradeColor.withValues(alpha: 0.2),
+                        color: gradeColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(AppTheme.radiusS),
                       ),
-                      child: Text(
-                        result.grade,
-                        style: AppTheme.headingMedium.copyWith(color: gradeColor),
+                      child: Center(
+                        child: Text(result.grade, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: gradeColor)),
                       ),
                     ),
                     const SizedBox(width: AppTheme.paddingM),
@@ -387,16 +419,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${result.correctAnswers}/${result.totalQuestions} 정답',
-                            style: AppTheme.bodyMedium,
+                            '${result.accuracyPercentage}점',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: gradeColor),
                           ),
+                          const SizedBox(height: 2),
                           Text(
-                            '${result.accuracyPercentage}% · ${result.formattedTime}',
+                            '${result.correctAnswers}/${result.totalQuestions} 정답 · $dateStr',
                             style: AppTheme.bodySmall,
                           ),
                         ],
                       ),
                     ),
+                    Text(result.formattedTime, style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
                   ],
                 ),
               );
@@ -410,13 +444,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Color _getGradeColor(String grade) {
     switch (grade) {
       case 'S':
+        return const Color(0xFFB8860B); // 진한 골드 (다크 골드)
       case 'A':
-        return AppTheme.goldColor;
+        return const Color(0xFFD4960A); // 황금색
       case 'B':
+        return const Color(0xFF2F80ED); // 블루
       case 'C':
-        return AppTheme.warningColor;
+        return AppTheme.warningColor;   // 주황
       default:
-        return AppTheme.errorColor;
+        return AppTheme.errorColor;     // 빨강
     }
   }
 }

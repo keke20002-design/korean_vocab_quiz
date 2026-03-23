@@ -123,7 +123,7 @@ class TemporaryHomePage extends StatelessWidget {
                 
                 // 부제목
                 Text(
-                  '초등학생을 위한 재미있는 한국어 학습',
+                  '국어 어휘 실력 향상을 위한 단어 학습 퀴즈 앱',
                   style: AppTheme.bodyMedium.copyWith(
                     color: AppTheme.textSecondaryColor,
                   ),

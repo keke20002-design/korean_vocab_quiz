@@ -28,30 +28,30 @@ class AppConstants {
 
 /// 앱 테마 설정
 class AppTheme {
-  // 기본 색상 팔레트 (70-25-5 파스텔 법칙 - 초등학생 대상)
-  static const Color primaryColor = Color(0xFF10B981); // 차분한 초록 (포인트 5%)
-  static const Color secondaryColor = Color(0xFF059669); // 짙은 초록 (텍스트/아이콘)
-  static const Color accentColor = Color(0xFFF97316); // 주황 포인트 (강조 5%)
-  static const Color successColor = Color(0xFF10B981); // 초록색
+  // 기본 색상 팔레트 (중고등학생 대상 - 학습 앱 느낌)
+  static const Color primaryColor = Color(0xFF2F80ED); // 메인 블루
+  static const Color secondaryColor = Color(0xFF27AE60); // 서브 그린
+  static const Color accentColor = Color(0xFFF97316); // 주황 포인트 (강조)
+  static const Color successColor = Color(0xFF27AE60); // 초록색
   static const Color errorColor = Color(0xFFFF6B6B); // 빨간색
   static const Color warningColor = Color(0xFFF97316); // 주황색
-  static const Color quizBlue = Color(0xFF3B82F6);    // 퀴즈 시작 파란색
+  static const Color quizBlue = Color(0xFF2F80ED);    // 퀴즈 시작 파란색
   static const Color wordsPurple = Color(0xFF8B5CF6); // 단어 관리 보라색
   static const Color goldColor = Color(0xFFF59E0B);   // 고득점 금색
 
-  // 배경 색상 (70% - 거의 흰색/매우 연한 회색)
-  static const Color backgroundColor = Color(0xFFF9FAFB); // 아주 연한 회색/흰색
+  // 배경 색상
+  static const Color backgroundColor = Color(0xFFF8F9FB);
   static const Color cardColor = Colors.white;
   static const Color surfaceColor = Color(0xFFF5F5F5);
 
   // 텍스트 색상
-  static const Color textPrimaryColor = Color(0xFF2D3436);
+  static const Color textPrimaryColor = Color(0xFF222222);
   static const Color textSecondaryColor = Color(0xFF636E72);
   static const Color textLightColor = Color(0xFFB2BEC3);
 
-  // 그라데이션 (25% 메인 영역 - 은은한 파스텔)
+  // 그라데이션
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)],
+    colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
